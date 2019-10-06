@@ -1,0 +1,16 @@
+using System.Collections;
+using UnityEngine;
+
+public class WaterShield : MonoBehaviour
+{
+    private void Start()
+    {
+        StartCoroutine(_enumerator());
+    }
+
+    private IEnumerator _enumerator()
+    {
+        yield return new WaitForSeconds(3);
+        Destroy(gameObject);
+    }
+}
