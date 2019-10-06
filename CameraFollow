@@ -1,0 +1,27 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class CameraFollow : MonoBehaviour
+{
+    private Vector2 _velocity;
+
+    private float smoothTime = 0.5f;
+
+    private GameObject _player;
+
+    private void Start()
+    {
+        _player = CharacterMovement.Instance.gameObject;
+    }
+
+    private void FixedUpdate()
+    {
+        var position = transform.position;
+        var playerPosition = _player.transform.position;
+        position = Vector2.SmoothDamp(position, playerPosition, ref _velocity, smoothTime, 100f, Time.fixedDeltaTime);
+        position.z = -10f;
+        position.y = playerPosition.y + 4f;
+        transform.position = position;
+    }
+}
