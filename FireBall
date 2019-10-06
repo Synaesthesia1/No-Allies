@@ -1,0 +1,43 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Fireball : MonoBehaviour
+{
+    private int _speed;
+    private Rigidbody2D _rb;
+    private SpriteRenderer _sr;
+
+    private void Start()
+    {
+        _rb = GetComponent<Rigidbody2D>();
+        _sr = GetComponent<SpriteRenderer>();
+        
+        if (CharacterMovement.Instance._sr.flipX)   // left
+        {
+            _rb.velocity = Vector2.left * 15f;
+            _sr.flipX = true;
+        }
+        else
+        {
+            _rb.velocity = Vector2.right * 15f;
+        }
+        
+        StartCoroutine(_lifeTime());
+    }
+
+    private IEnumerator _lifeTime()
+    {
+        yield return new WaitForSeconds(3);
+        Destroy(gameObject);
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.CompareTag("Fire") || other.gameObject.CompareTag("Water") || other.gameObject.CompareTag("Stone") || other.gameObject.CompareTag("Slime"))
+        {
+            other.gameObject.GetComponent<Enemy>().TakeDamage("Fire");
+        }
+    }
+}
