@@ -1,0 +1,64 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Enemy : MonoBehaviour
+{
+    private float _health = 1;
+    private const int Damage = 1;
+
+    public void TakeDamage(string damage)
+    {
+        if (damage == "Basic")
+        {
+            if (gameObject.CompareTag("Slime") || gameObject.CompareTag("Fire") || gameObject.CompareTag("Stone"))
+            {
+                _health -= Damage;
+            }
+        }
+        else if (damage == "Fire")
+        {
+            if (gameObject.CompareTag("Water") || gameObject.CompareTag("Stone"))
+            {
+                _health -= Damage;
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (_health <= 0)
+        {
+            OnDied();
+        }
+    }
+
+    private void OnDied()
+    {
+        if (gameObject.CompareTag("Fire"))
+        {
+            Destroy(GameObject.FindGameObjectWithTag("FireCage"));
+            Destroy(gameObject);
+            _health = 1;
+        }
+        else if (gameObject.CompareTag("Water"))
+        {
+            Destroy(GameObject.FindGameObjectWithTag("WaterCage"));
+            Destroy(gameObject);
+            _health = 1;
+        }
+        else if (gameObject.CompareTag("Stone"))
+        {
+            Destroy(GameObject.FindGameObjectWithTag("StoneCage"));
+            Destroy(gameObject);
+            _health = 1;
+        }
+        else if (gameObject.CompareTag("Slime"))
+        {
+            Destroy(GameObject.FindGameObjectWithTag("SlimeCage"));
+            Destroy(gameObject);
+            _health = 1;
+        }
+    }
+}
