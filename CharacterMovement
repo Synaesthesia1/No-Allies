@@ -1,0 +1,229 @@
+using System;
+using System.Collections;
+using UnityEngine;
+
+public class CharacterMovement : MonoBehaviour
+{
+    public static CharacterMovement Instance;
+    
+    private float _speed = 10f;
+    private float _jumpForce = 10f;
+    private float _moveInput;
+
+    private Rigidbody2D _rb;
+    [HideInInspector]
+    public SpriteRenderer _sr;
+
+    private bool _facingRight;
+
+    private bool _isGrounded;
+    public Transform groundCheck;
+    public float checkRadius;
+    public LayerMask whatIsGround;
+
+    private int _extraJumps = 1;
+
+    private Camera _camera;
+    private float _t;
+    private float _t2;
+    private bool _resizeCamera = true;
+
+    private float _timeBtwnAttack;
+    public float startTimeBtwnAttack;
+    public Transform attackPos;
+    public float attackRange;
+    public LayerMask whatIsEnemies;
+    
+    private int _basicDamage = 1;
+    private int _fireDamage = 5;
+    
+    public Sprite basicAttackSprite;
+    public Sprite idleSprite;
+    public Sprite fireSpellSprite;
+    public Sprite waterSpellSprite;
+    public Sprite stoneSpellSprite;
+
+    public GameObject fireBall;
+    public GameObject waterShield;
+
+    private bool _canUseShieldAgain = true;
+    private float _shieldCooldown = 10f;
+
+    private bool _canUseStoneAgain = true;
+    private float _stoneCooldown = 10f;
+    
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    private void Start()
+    {
+        _rb = GetComponent<Rigidbody2D>();
+        _sr = GetComponent<SpriteRenderer>();
+        _camera = Camera.main;
+    }
+
+    private void FixedUpdate()
+    {
+        _isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, whatIsGround);
+        
+        _moveInput = Input.GetAxisRaw("Horizontal");
+        _rb.velocity = new Vector2(_moveInput * _speed, _rb.velocity.y);
+
+        if (_facingRight == false && _moveInput < 0)
+        {
+            Flip();
+        }
+        else if (_facingRight && _moveInput > 0)
+        {
+            Flip();
+        }
+    }
+
+    private void Update()
+    {
+        if (_isGrounded)
+        {
+            _extraJumps = 1;
+            if (_camera.orthographicSize <= 12f)
+            {
+                _resizeCamera = false;
+            }
+        }
+        else
+        {
+            if (_camera.orthographicSize >= 10f)
+            {
+                _resizeCamera = true;
+            }
+        }
+        ResizeCamera();
+        
+        if (Input.GetKeyDown(KeyCode.W) && _extraJumps > 0)
+        {
+            _rb.velocity = Vector2.up * _jumpForce;
+            _extraJumps--;
+        }
+        else if (Input.GetKeyDown(KeyCode.W) && _extraJumps == 0 && _isGrounded)
+        {
+            _rb.velocity = Vector2.up * _jumpForce;
+        }
+        
+        Abilities();
+    }
+
+    private void Abilities()
+    {
+        if (_timeBtwnAttack <= 0)
+        {
+            // then i can attack
+            _sr.sprite = idleSprite;
+            if (Input.GetMouseButtonDown(0))    // Basic Attack
+            {
+                _sr.sprite = basicAttackSprite;
+                
+                Collider2D[] enemiesToDamage = Physics2D.OverlapCircleAll(attackPos.position, attackRange, whatIsEnemies);
+                
+                for (int i = 0; i < enemiesToDamage.Length; i++)
+                {
+                    enemiesToDamage[i].GetComponent<Enemy>().TakeDamage("Basic");
+                }
+                
+                _timeBtwnAttack = startTimeBtwnAttack;
+            }
+            else if (Input.GetKeyDown(KeyCode.E))    // Fireball
+            {
+                _sr.sprite = fireSpellSprite;
+
+                Instantiate(fireBall, attackPos.position, Quaternion.identity, null);
+                                
+                _timeBtwnAttack = startTimeBtwnAttack;
+            }
+            else if (Input.GetKeyDown(KeyCode.Space) && _canUseShieldAgain)   // Water Shield
+            {
+                _sr.sprite = waterSpellSprite;
+
+                Instantiate(waterShield, gameObject.transform.position, Quaternion.identity, transform);
+                _canUseShieldAgain = false;
+                
+                _timeBtwnAttack = startTimeBtwnAttack;
+            }
+            else if (Input.GetKeyDown(KeyCode.Q) && _canUseStoneAgain)   // Turn it to a Stone
+            {
+                _sr.sprite = stoneSpellSprite;
+
+                _canUseStoneAgain = false;
+                
+                _timeBtwnAttack = startTimeBtwnAttack;
+            }
+        }
+        else
+        {
+            _timeBtwnAttack -= Time.deltaTime;
+        }
+
+        if (!_canUseShieldAgain)
+        {
+            if (_shieldCooldown <= 0)
+            {
+                _canUseShieldAgain = true;
+                _shieldCooldown = 10f;
+            }
+            else
+            {
+                _shieldCooldown -= Time.deltaTime;
+            }
+        }
+
+        if (!_canUseStoneAgain)
+        {
+            if (_stoneCooldown <= 0)
+            {
+                _canUseStoneAgain = true;
+                _stoneCooldown = 10f;
+            }
+            else
+            {
+                _stoneCooldown -= Time.deltaTime;
+            }
+        }
+    }
+
+    private void ResizeCamera()
+    {
+        if (_resizeCamera)
+        {
+            _t += Time.deltaTime;
+            _t2 = 0;
+            _camera.orthographicSize = Mathf.SmoothStep(10, 12, _t);
+        }
+        else
+        {
+            _t2 += Time.deltaTime;
+            _t = 0;
+            _camera.orthographicSize = Mathf.SmoothStep(12, 10, _t2);
+        }
+    }
+    
+    private void Flip()
+    {
+        _facingRight = !_facingRight;
+        _sr.flipX = _facingRight;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(attackPos.position, attackRange);
+    }
+    
+    
+}
